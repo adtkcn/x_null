@@ -28,6 +28,18 @@ func NewTime(val time.Time) Time {
 	return Time{Val: &val, Exist: true}
 }
 
+// DecodeTime 解码字符串
+func DecodeTime(value any) (any, error) {
+	switch v := value.(type) {
+	case nil:
+		return Time{Val: nil, Exist: true}, nil
+
+	default:
+		result, err := ToTime(v)
+		return Time{Val: &result, Exist: true}, err
+	}
+}
+
 // Scan 读取数据gorm调用
 func (t *Time) Scan(v any) error {
 	switch val := v.(type) {

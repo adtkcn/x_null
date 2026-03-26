@@ -23,8 +23,7 @@ func NewString(val string) String {
 func DecodeString(value any) (any, error) {
 	switch v := value.(type) {
 	case nil:
-		var s string
-		return String{Val: &s, Exist: true}, nil
+		return String{Val: nil, Exist: true}, nil
 	case String:
 		return v, nil
 	default:
@@ -37,8 +36,7 @@ func DecodeString(value any) (any, error) {
 func (i *String) Scan(value any) error {
 	switch v := value.(type) {
 	case nil:
-		var s string
-		i.Val = &s
+		i.Val = nil
 		i.Exist = true
 		return nil
 	case string:
@@ -97,8 +95,7 @@ func (i *String) UnmarshalJSON(data []byte) error {
 	}
 	switch v := x.(type) {
 	case nil:
-		var s string
-		i.Val = &s
+		i.Val = nil
 		i.Exist = true
 		return nil
 	default:

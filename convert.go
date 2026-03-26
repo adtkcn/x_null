@@ -3,6 +3,7 @@ package x_null
 import (
 	"fmt"
 	"strconv"
+	"time"
 )
 
 // ToFloat64 将任意值转换为 float64
@@ -119,4 +120,29 @@ func ToString(value any) string {
 	default:
 		return fmt.Sprintf("%v", v)
 	}
+}
+
+// ToTime
+func ToTime(value any) (time.Time, error) {
+
+	switch v := value.(type) {
+
+	case nil:
+
+		return time.Time{}, nil
+
+	case time.Time:
+
+		return v, nil
+
+	case string:
+
+		return time.ParseInLocation(TimeFormat, v, time.Local)
+
+	default:
+
+		return time.Time{}, fmt.Errorf("cannot convert %T to time.Time", value)
+
+	}
+
 }
