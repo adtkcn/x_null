@@ -1,0 +1,199 @@
+package x_null
+
+import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"strconv"
+)
+
+// NullInt64 支持前端传递null，int，string类型和不传值
+// 前端传1，"1"都可以，都转换为int64类型: NullInt64{Val: 1, Exist: true}
+// 前端null值: NullInt64{Val: nil, Exist: true}
+// 前端没传值: NullInt64{Val: nil, Exist: false}：结构体字段都是零值，并且Value接口返回nil，会忽略更新
+type NullInt64 struct {
+	Val   *int64
+	Exist bool
+}
+
+// NewNullInt64 创建一个带值的 NullInt64
+func NewNullInt64(val int64) NullInt64 {
+	return NullInt64{Val: &val, Exist: true}
+}
+
+// DecodeInt 解码整数值
+func DecodeInt(value any) (any, error) {
+	switch v := value.(type) {
+	case nil:
+		return NullInt64{Val: nil, Exist: false}, nil
+	case NullInt64:
+		return v, nil
+	default:
+		result, err := ToInt64(value)
+		if err != nil {
+			return NullInt64{Val: nil, Exist: false}, err
+		}
+		return NullInt64{Val: &result, Exist: true}, nil
+	}
+}
+
+// Scan gorm实现Scanner
+func (i *NullInt64) Scan(value any) error {
+	switch v := value.(type) {
+	case nil:
+		i.Exist = true
+		return nil
+	case int64:
+		i.Val, i.Exist = &v, true
+		return nil
+	case string:
+		num, err := strconv.ParseInt(v, 10, 64)
+		if err == nil {
+			i.Val = &num
+			i.Exist = true
+		} else {
+			i.Exist = false
+		}
+		return err
+	default:
+		return fmt.Errorf("不能将类型 %T 转换为 int64", v)
+	}
+}
+
+// Value gorm实现 Valuer
+func (i NullInt64) Value() (driver.Value, error) {
+	if !i.Exist {
+		return nil, nil
+	}
+	v := i.Val
+	if v == nil {
+		return nil, nil
+	}
+	return *v, nil
+}
+
+// String 实现fmt.Stringer接口
+func (i NullInt64) String() string {
+	if i.Exist {
+		if i.Val == nil {
+			return ""
+		}
+		return strconv.FormatInt(*i.Val, 10)
+	}
+	return ""
+}
+
+// MarshalJSON 实现json序列化接口
+func (i NullInt64) MarshalJSON() ([]byte, error) {
+	if i.Exist {
+		return json.Marshal(i.Val)
+	}
+	return json.Marshal(nil)
+}
+
+// UnmarshalText 实现 encoding.TextUnmarshaler 接口
+func (i *NullInt64) UnmarshalText(text []byte) error {
+	return i.Scan(string(text))
+}
+
+// UnmarshalParam 实现gin框架的参数绑定接口
+func (i *NullInt64) UnmarshalParam(param string) error {
+	return i.Scan(param)
+}
+
+// UnmarshalJSON 实现json反序列化接口,支持 int64, string，null类型，对于float64类型，判断转换前后是否相等，防止精度丢失
+func (i *NullInt64) UnmarshalJSON(data []byte) error {
+	var x any
+	if err := json.Unmarshal(data, &x); err != nil {
+		return err
+	}
+	switch v := x.(type) {
+	case nil:
+		i.Exist = true
+		return nil
+	case int64:
+		i.Val = &v
+		i.Exist = true
+		return nil
+	case float64:
+		i64 := int64(v)
+		// 判断转换前后是否相等，防止精度丢失
+		if float64(i64) != v {
+			i.Exist = false
+			return errors.New("int64转换失败，" + fmt.Sprintf("%f", v) + "精度丢失")
+		}
+		i.Val = &i64
+		i.Exist = true
+		return nil
+	case string:
+		if v == "" {
+			i.Val = nil
+			i.Exist = true
+			return nil
+		}
+		num, err := strconv.ParseInt(v, 10, 64)
+		if err == nil {
+			i.Val = &num
+			i.Exist = true
+		} else {
+			i.Exist = false
+		}
+		return err
+	default:
+		return fmt.Errorf("不能将类型 %T 转换为 int64, 值为 %v", v, v)
+	}
+}
+
+// SetValue 设置值
+func (i *NullInt64) SetValue(value int64) {
+	i.Val = &value
+	i.Exist = true
+}
+
+// SetNull 设置为null
+func (i *NullInt64) SetNull() {
+	i.Val = nil
+	i.Exist = true
+}
+
+// GetValue 获取值指针
+func (i *NullInt64) GetValue() *int64 {
+	return i.Val
+}
+
+// ValueOr 获取值，不存在则返回默认值
+func (i *NullInt64) ValueOr(v int64) int64 {
+	if i.Val == nil {
+		return v
+	}
+	return *i.Val
+}
+
+// ValueOrZero 获取值，不存在则返回零值
+func (i *NullInt64) ValueOrZero() int64 {
+	if i.Val == nil {
+		return 0
+	}
+	return *i.Val
+}
+
+// IsZero go to json时omitempty标签是否忽略该字段
+func (i NullInt64) IsZero() bool {
+	return !i.Exist
+}
+
+// IsExists 是否存在
+func (i NullInt64) IsExists() bool {
+	return i.Exist
+}
+
+// IsExistsAndNotNull 存在且不为null
+func (i NullInt64) IsExistsAndNotNull() bool {
+	return i.Exist && i.Val != nil
+}
+
+// IsExistsAndNull 存在且为null
+func (i NullInt64) IsExistsAndNull() bool {
+	return i.Exist && i.Val == nil
+}
