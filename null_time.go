@@ -17,19 +17,19 @@ const (
 	TimeFormat = "2006-01-02 15:04:05"
 )
 
-// NullTime 自定义时间格式
-type NullTime struct {
+// Time 自定义时间格式
+type Time struct {
 	Val   *time.Time
 	Exist bool
 }
 
-// NewNullTime 创建一个带值的 NullTime
-func NewNullTime(val time.Time) NullTime {
-	return NullTime{Val: &val, Exist: true}
+// NewTime 创建一个带值的 Time
+func NewTime(val time.Time) Time {
+	return Time{Val: &val, Exist: true}
 }
 
 // Scan 读取数据gorm调用
-func (t *NullTime) Scan(v any) error {
+func (t *Time) Scan(v any) error {
 	switch val := v.(type) {
 	case nil:
 		t.Val = nil
@@ -59,7 +59,7 @@ func (t *NullTime) Scan(v any) error {
 }
 
 // Value 写入数据库gorm调用
-func (t NullTime) Value() (driver.Value, error) {
+func (t Time) Value() (driver.Value, error) {
 	timeStr := t.String()
 	if timeStr == "" {
 		return nil, nil
@@ -68,7 +68,7 @@ func (t NullTime) Value() (driver.Value, error) {
 }
 
 // String 实现fmt.Stringer接口
-func (t NullTime) String() string {
+func (t Time) String() string {
 	if !t.Exist {
 		return ""
 	}
@@ -79,8 +79,8 @@ func (t NullTime) String() string {
 	return tt.Format(TimeFormat)
 }
 
-// MarshalJSON 将NullTime类型的时间转化为JSON字符串格式
-func (t NullTime) MarshalJSON() ([]byte, error) {
+// MarshalJSON 将Time类型的时间转化为JSON字符串格式
+func (t Time) MarshalJSON() ([]byte, error) {
 	if t.Exist {
 		if t.Val == nil {
 			return json.Marshal(nil)
@@ -93,24 +93,24 @@ func (t NullTime) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalText 实现 encoding.TextUnmarshaler 接口
-func (i *NullTime) UnmarshalText(text []byte) error {
+func (i *Time) UnmarshalText(text []byte) error {
 	return i.Scan(string(text))
 }
 
 // UnmarshalParam 实现gin框架的参数绑定接口
-func (i *NullTime) UnmarshalParam(param string) error {
+func (i *Time) UnmarshalParam(param string) error {
 	return i.Scan(param)
 }
 
 // UnmarshalJSON 实现json反序列化接口
-func (t *NullTime) UnmarshalJSON(bs []byte) error {
+func (t *Time) UnmarshalJSON(bs []byte) error {
 	var date string
 	err := json.Unmarshal(bs, &date)
 	if err != nil {
 		return err
 	}
 	if date == "" {
-		*t = NullTime{
+		*t = Time{
 			Val:   nil,
 			Exist: true,
 		}
@@ -120,7 +120,7 @@ func (t *NullTime) UnmarshalJSON(bs []byte) error {
 	if err != nil {
 		return err
 	}
-	*t = NullTime{
+	*t = Time{
 		Val:   &tt,
 		Exist: true,
 	}
@@ -128,29 +128,29 @@ func (t *NullTime) UnmarshalJSON(bs []byte) error {
 }
 
 // GormDBDataType gorm数据类型
-func (NullTime) GormDBDataType(db *gorm.DB, field *schema.Field) string {
+func (Time) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	return "DATETIME"
 }
 
 // SetValue 设置值
-func (i *NullTime) SetValue(value time.Time) {
+func (i *Time) SetValue(value time.Time) {
 	i.Val = &value
 	i.Exist = true
 }
 
 // SetNull 设置为null
-func (i *NullTime) SetNull() {
+func (i *Time) SetNull() {
 	i.Val = nil
 	i.Exist = true
 }
 
 // GetValue 获取值指针
-func (i *NullTime) GetValue() *time.Time {
+func (i *Time) GetValue() *time.Time {
 	return i.Val
 }
 
 // ValueOr 获取值，不存在则返回默认值
-func (i *NullTime) ValueOr(v time.Time) time.Time {
+func (i *Time) ValueOr(v time.Time) time.Time {
 	if i.Val == nil {
 		return v
 	}
@@ -158,7 +158,7 @@ func (i *NullTime) ValueOr(v time.Time) time.Time {
 }
 
 // ValueOrZero 获取值，不存在则返回零值
-func (i *NullTime) ValueOrZero() time.Time {
+func (i *Time) ValueOrZero() time.Time {
 	if i.Val == nil {
 		return time.Time{}
 	}
@@ -166,21 +166,21 @@ func (i *NullTime) ValueOrZero() time.Time {
 }
 
 // IsZero go to json时omitempty标签是否忽略该字段
-func (i NullTime) IsZero() bool {
+func (i Time) IsZero() bool {
 	return !i.Exist
 }
 
 // IsExists 是否存在
-func (i NullTime) IsExists() bool {
+func (i Time) IsExists() bool {
 	return i.Exist
 }
 
 // IsExistsAndNotNull 存在且不为null
-func (i NullTime) IsExistsAndNotNull() bool {
+func (i Time) IsExistsAndNotNull() bool {
 	return i.Exist && i.Val != nil
 }
 
 // IsExistsAndNull 存在且为null
-func (i NullTime) IsExistsAndNull() bool {
+func (i Time) IsExistsAndNull() bool {
 	return i.Exist && i.Val == nil
 }
