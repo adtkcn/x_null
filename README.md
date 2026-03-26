@@ -1,9 +1,9 @@
 ## Null Types
 ```go
-core.NullFloat64
-core.NullInt64
-core.NullString
-core.NullTime
+x_null.Float64
+x_null.Int64
+x_null.String
+x_null.Time
 ```
 
 ## 解决了什么问题？
@@ -16,7 +16,7 @@ core.NullTime
 
 ## 自定义类型介绍
 ```go
-type NullInt64 struct {
+type Int64 struct {
 	Val   *int64
 	Exist bool
 }
@@ -28,30 +28,30 @@ type NullInt64 struct {
 ## 自定义类型方法
 暂时不要使用没有列出的方法。
 ```go
-func (i *NullInt64) Scan(value any) error
+func (i *Int64) Scan(value any) error
 
-func (i NullInt64) Value() (driver.Value, error)
+func (i Int64) Value() (driver.Value, error)
 
-func (i NullInt64) MarshalJSON() ([]byte, error)
+func (i Int64) MarshalJSON() ([]byte, error)
 
-func (i *NullInt64) UnmarshalJSON(data []byte) error
-func (i *NullInt64) UnmarshalText(text []byte) error
-func (i *NullInt64) UnmarshalParam(param string) error
+func (i *Int64) UnmarshalJSON(data []byte) error
+func (i *Int64) UnmarshalText(text []byte) error
+func (i *Int64) UnmarshalParam(param string) error
 
 
-func (i NullInt64) String() string
+func (i Int64) String() string
 
 
 // ValueOr 获取值，不存在则返回默认值
-func (i *NullInt64) ValueOr(v int64) int64
+func (i *Int64) ValueOr(v int64) int64
 // ValueOrZero 获取值，不存在则返回零值
-func (i *NullInt64) ValueOrZero() int64
+func (i *Int64) ValueOrZero() int64
 // IsZero go to json时omitempty标签是否忽略该字段
-func (i NullInt64) IsZero() bool 
+func (i Int64) IsZero() bool 
 // IsExists 是否存在
-func (i NullInt64) IsExists() bool
+func (i Int64) IsExists() bool
 // IsExistsAndNotNull 存在且不为null
-func (i NullInt64) IsExistsAndNotNull() bool
+func (i Int64) IsExistsAndNotNull() bool
 // IsExistsAndNull 存在且为null
-func (i NullInt64) IsExistsAndNull() bool
+func (i Int64) IsExistsAndNull() bool
 ```
