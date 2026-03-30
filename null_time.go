@@ -3,11 +3,7 @@ package x_null
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"fmt"
 	"time"
-
-	"gorm.io/gorm"
-	"gorm.io/gorm/schema"
 )
 
 const (
@@ -33,41 +29,65 @@ func DecodeTime(value any) (any, error) {
 	switch v := value.(type) {
 	case nil:
 		return Time{Val: nil, Exist: true}, nil
-
+	case Time:
+		return v, nil
 	default:
 		result, err := ToTime(v)
-		return Time{Val: &result, Exist: true}, err
+		return Time{Val: result, Exist: true}, err
 	}
 }
 
 // Scan 读取数据gorm调用
-func (t *Time) Scan(v any) error {
-	switch val := v.(type) {
-	case nil:
-		t.Val = nil
-		t.Exist = true
-		return nil
-	case string:
-		tt, err := time.ParseInLocation(TimeFormat, val, time.Local)
-		if err != nil {
-			return err
-		}
-		t.Val = &tt
-		t.Exist = true
-		return nil
-	case time.Time:
-		tt := val.Format(TimeFormat)
-		if tt == "0001-01-01 00:00:00" {
-			t.Val = nil
-			t.Exist = true
-		} else {
-			t.Val = &val
-			t.Exist = true
-		}
-		return nil
-	default:
-		return fmt.Errorf("不能将类型 %T 转换为 time.Time, 值为 %v", v, v)
+func (t *Time) Scan(value any) error {
+	result, err := ToTime(value)
+	if err != nil {
+		return err
 	}
+	t.Val = result
+	t.Exist = true
+	return nil
+
+	// switch val := value.(type) {
+	// case nil:
+	// 	t.Val = nil
+	// 	t.Exist = true
+	// 	return nil
+	// default:
+	// 	result, err := ToTime(val)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	t.Val = &result
+	// 	t.Exist = true
+	// 	return nil
+	// }
+
+	// switch val := v.(type) {
+	// case nil:
+	// 	t.Val = nil
+	// 	t.Exist = true
+	// 	return nil
+	// case string:
+	// 	tt, err := time.ParseInLocation(TimeFormat, val, time.Local)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	t.Val = &tt
+	// 	t.Exist = true
+	// 	return nil
+	// case time.Time:
+	// 	tt := val.Format(TimeFormat)
+	// 	if tt == "0001-01-01 00:00:00" {
+	// 		t.Val = nil
+	// 		t.Exist = true
+	// 	} else {
+	// 		t.Val = &val
+	// 		t.Exist = true
+	// 	}
+	// 	return nil
+	// default:
+	// 	return fmt.Errorf("不能将类型 %T 转换为 time.Time, 值为 %v", v, v)
+	// }
 }
 
 // Value 写入数据库gorm调用
@@ -121,28 +141,31 @@ func (t *Time) UnmarshalJSON(bs []byte) error {
 	if err != nil {
 		return err
 	}
-	if date == "" {
-		*t = Time{
-			Val:   nil,
-			Exist: true,
-		}
-		return nil
-	}
-	tt, err := time.ParseInLocation(TimeFormat, date, time.Local)
-	if err != nil {
-		return err
-	}
-	*t = Time{
-		Val:   &tt,
-		Exist: true,
-	}
-	return nil
+
+	return t.Scan(date)
+	// if date == "" {
+	// 	*t = Time{
+	// 		Val:   nil,
+	// 		Exist: true,
+	// 	}
+	// 	return nil
+	// }
+	// tt, err := ToTime(date)
+	// // tt, err := time.ParseInLocation(TimeFormat, date, time.Local)
+	// if err != nil {
+	// 	return err
+	// }
+	// *t = Time{
+	// 	Val:   &tt,
+	// 	Exist: true,
+	// }
+	// return nil
 }
 
 // GormDBDataType gorm数据类型
-func (Time) GormDBDataType(db *gorm.DB, field *schema.Field) string {
-	return "DATETIME"
-}
+// func (Time) GormDBDataType(db *gorm.DB, field *schema.Field) string {
+// 	return "DATETIME"
+// }
 
 // SetValue 设置值
 func (i *Time) SetValue(value time.Time) {

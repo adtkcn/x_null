@@ -3,14 +3,13 @@ package x_null
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"strconv"
 )
 
 // Int64 支持前端传递null，int，string类型和不传值
 // 前端传1，"1"都可以，都转换为int64类型: Int64{Val: 1, Exist: true}
 // 前端null值: Int64{Val: nil, Exist: true}
+// 前端""值: Int64{Val: nil, Exist: true}
 // 前端没传值: Int64{Val: nil, Exist: false}：结构体字段都是零值，并且Value接口返回nil，会忽略更新
 type Int64 struct {
 	Val   *int64
@@ -24,41 +23,53 @@ func NewInt64(val int64) Int64 {
 
 // DecodeInt 解码整数值
 func DecodeInt64(value any) (any, error) {
-	switch v := value.(type) {
-	case nil:
-		return Int64{Val: nil, Exist: false}, nil
-	case Int64:
-		return v, nil
-	default:
-		result, err := ToInt64(value)
-		if err != nil {
-			return Int64{Val: nil, Exist: false}, err
-		}
-		return Int64{Val: &result, Exist: true}, nil
+	result, err := ToInt64(value)
+	if err != nil {
+		return Int64{Val: nil, Exist: false}, err
 	}
+	return Int64{Val: result, Exist: true}, nil
+
+	// switch v := value.(type) {
+	// case nil:
+	// 	return Int64{Val: nil, Exist: true}, nil
+	// case Int64:
+	// 	return v, nil
+	// default:
+	// 	result, err := ToInt64(value)
+	// 	if err != nil {
+	// 		return Int64{Val: nil, Exist: false}, err
+	// 	}
+	// 	return Int64{Val: result, Exist: true}, nil
+	// }
 }
 
 // Scan gorm实现Scanner
 func (i *Int64) Scan(value any) error {
-	switch v := value.(type) {
-	case nil:
-		i.Exist = true
-		return nil
-	case int64:
-		i.Val, i.Exist = &v, true
-		return nil
-	case string:
-		num, err := strconv.ParseInt(v, 10, 64)
-		if err == nil {
-			i.Val = &num
-			i.Exist = true
-		} else {
-			i.Exist = false
-		}
+	result, err := ToInt64(value)
+	if err != nil {
 		return err
-	default:
-		return fmt.Errorf("不能将类型 %T 转换为 int64", v)
 	}
+	i.Val = result
+	i.Exist = true
+	return nil
+	// case nil:
+	// 	i.Exist = true
+	// 	return nil
+	// case int64:
+	// 	i.Val, i.Exist = &v, true
+	// 	return nil
+	// case string:
+	// 	num, err := strconv.ParseInt(v, 10, 64)
+	// 	if err == nil {
+	// 		i.Val = &num
+	// 		i.Exist = true
+	// 	} else {
+	// 		i.Exist = false
+	// 	}
+	// 	return err
+	// default:
+	// 	return fmt.Errorf("不能将类型 %T 转换为 int64", v)
+	// }
 }
 
 // Value gorm实现 Valuer
@@ -108,41 +119,48 @@ func (i *Int64) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &x); err != nil {
 		return err
 	}
-	switch v := x.(type) {
-	case nil:
-		i.Exist = true
-		return nil
-	case int64:
-		i.Val = &v
-		i.Exist = true
-		return nil
-	case float64:
-		i64 := int64(v)
-		// 判断转换前后是否相等，防止精度丢失
-		if float64(i64) != v {
-			i.Exist = false
-			return errors.New("int64转换失败，" + fmt.Sprintf("%f", v) + "精度丢失")
-		}
-		i.Val = &i64
-		i.Exist = true
-		return nil
-	case string:
-		if v == "" {
-			i.Val = nil
-			i.Exist = true
-			return nil
-		}
-		num, err := strconv.ParseInt(v, 10, 64)
-		if err == nil {
-			i.Val = &num
-			i.Exist = true
-		} else {
-			i.Exist = false
-		}
+	result, err := ToInt64(x)
+	if err != nil {
 		return err
-	default:
-		return fmt.Errorf("不能将类型 %T 转换为 int64, 值为 %v", v, v)
 	}
+	i.Val = result
+	i.Exist = true
+	return nil
+	// switch v := x.(type) {
+	// case nil:
+	// 	i.Exist = true
+	// 	return nil
+	// case int64:
+	// 	i.Val = &v
+	// 	i.Exist = true
+	// 	return nil
+	// case float64:
+	// 	i64 := int64(v)
+	// 	// 判断转换前后是否相等，防止精度丢失
+	// 	if float64(i64) != v {
+	// 		i.Exist = false
+	// 		return errors.New("int64转换失败，" + fmt.Sprintf("%f", v) + "精度丢失")
+	// 	}
+	// 	i.Val = &i64
+	// 	i.Exist = true
+	// 	return nil
+	// case string:
+	// 	if v == "" {
+	// 		i.Val = nil
+	// 		i.Exist = true
+	// 		return nil
+	// 	}
+	// 	num, err := strconv.ParseInt(v, 10, 64)
+	// 	if err == nil {
+	// 		i.Val = &num
+	// 		i.Exist = true
+	// 	} else {
+	// 		i.Exist = false
+	// 	}
+	// 	return err
+	// default:
+	// 	return fmt.Errorf("不能将类型 %T 转换为 int64, 值为 %v", v, v)
+	// }
 }
 
 // SetValue 设置值

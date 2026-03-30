@@ -8,6 +8,7 @@ import (
 // String 支持前端传递null，int，string类型和不传值
 // 前端传1，"1"都可以，都转换为string类型: String{Val: "1", Exist: true}
 // 前端null值: String{Val: nil, Exist: true}
+// 前端""值: String{Val: "", Exist: true}
 // 前端没传值: String{Val: nil, Exist: false}
 type String struct {
 	Val   *string
@@ -28,7 +29,7 @@ func DecodeString(value any) (any, error) {
 		return v, nil
 	default:
 		result := ToString(v)
-		return String{Val: &result, Exist: true}, nil
+		return String{Val: result, Exist: true}, nil
 	}
 }
 
@@ -44,7 +45,7 @@ func (i *String) Scan(value any) error {
 		return nil
 	default:
 		result := ToString(v)
-		i.Val, i.Exist = &result, true
+		i.Val, i.Exist = result, true
 		return nil
 	}
 }
@@ -100,7 +101,7 @@ func (i *String) UnmarshalJSON(data []byte) error {
 		return nil
 	default:
 		result := ToString(v)
-		i.Val = &result
+		i.Val = result
 		i.Exist = true
 		return nil
 	}

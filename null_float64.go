@@ -3,13 +3,13 @@ package x_null
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"fmt"
 	"strconv"
 )
 
 // Float64 支持前端传递null，int，float，string类型和不传值
 // 前端传1，"1"都可以，都转换为float64类型: Float64{Val: 1.0, Exist: true}
 // 前端null值: Float64{Val: nil, Exist: true}
+// 前端""值: Float64{Val: nil, Exist: true}
 // 前端没传值: Float64{Val: nil, Exist: false}
 type Float64 struct {
 	Val   *float64
@@ -33,17 +33,18 @@ func DecodeFloat64(value any) (any, error) {
 		if err != nil {
 			return Float64{Val: nil, Exist: false}, err
 		}
-		return Float64{Val: &result, Exist: true}, nil
+		return Float64{Val: result, Exist: true}, nil
 	}
 }
 
 // Scan gorm实现Scanner
 func (f *Float64) Scan(value any) error {
+
 	result, err := ToFloat64(value)
 	if err != nil {
 		return err
 	}
-	f.Val, f.Exist = &result, true
+	f.Val, f.Exist = result, true
 	return nil
 }
 
@@ -89,41 +90,12 @@ func (i *Float64) UnmarshalParam(param string) error {
 }
 
 // UnmarshalJSON 实现json反序列化接口
-func (f *Float64) UnmarshalJSON(data []byte) error {
+func (i *Float64) UnmarshalJSON(data []byte) error {
 	var x any
 	if err := json.Unmarshal(data, &x); err != nil {
 		return err
 	}
-	switch v := x.(type) {
-	case nil:
-		f.Exist = true
-		return nil
-	case int64:
-		f64 := float64(v)
-		f.Val = &f64
-		f.Exist = true
-		return nil
-	case float64:
-		f.Val = &v
-		f.Exist = true
-		return nil
-	case string:
-		if v == "" {
-			f.Val = nil
-			f.Exist = true
-			return nil
-		}
-		num, err := strconv.ParseFloat(v, 64)
-		if err == nil {
-			f.Val = &num
-			f.Exist = true
-		} else {
-			f.Exist = false
-		}
-		return err
-	default:
-		return fmt.Errorf("不能将类型 %T 转换为 float64, 值为 %v", v, v)
-	}
+	return i.Scan(x)
 }
 
 // SetValue 设置值
